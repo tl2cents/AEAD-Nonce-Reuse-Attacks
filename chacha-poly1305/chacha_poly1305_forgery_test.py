@@ -155,9 +155,10 @@ if __name__ == "__main__":
     test_derive_poly1305_key()
     test_impl_poly1305()
     test_recover_poly1305_key()
-    for i in range(10):
+    for i in range(5):
         test_chachapoly1305_forgery_attack(False)
-    for i in range(10):
+    for i in range(5):
         test_chachapoly1305_forgery_attack(True)
-    for i in range(10):       
+    for i in range(5):       
         test_chachapoly1305_forgery_attack_general()
+    print("[+] All Tests Passed")

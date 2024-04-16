@@ -59,9 +59,9 @@ def test_forge_tag_from_plaintext():
     keys = list(recover_possible_auth_keys(a1, c1, t1, a2, c2, t2))
     print(f"[+] Found {len(keys)} possible keys")
     for h in keys:
-        target_tag = forge_tag_from_plaintext(h, a1, c1, t1, m1, target_a, target_m)
+        target_ct, target_tag = forge_tag_from_plaintext(h, a1, c1, t1, m1, target_a, target_m)
         try:
-            pt = gcm_dec(target_a, target_m, target_tag)
+            pt = gcm_dec(target_a, target_ct, target_tag)
             assert pt == target_m, f"Decrypted message {pt} is not equal to the target message {target_m}"
             print(f"[+] Found the correct key")
             break
@@ -79,8 +79,7 @@ def test_aes_gcm_forgery_attack():
     target_m = get_random_bytes(16)
     forgeries = list(aes_gcm_forgery_attack(a1, c1, t1, a2, c2, t2, m1, target_m, target_a))
     print(f"[+] Found {len(forgeries)} possible forgeries")
-    for forged_a, forged_c, forged_t in forgeries:
-        assert forged_a == target_a, f"Forged associated data {forged_a} is not equal to the target associated data {target_a}"
+    for forged_c, forged_t in forgeries:
         try:
             pt = gcm_dec(target_a, forged_c, forged_t)
             # assert pt == target_m, f"Decrypted message {pt} is not equal to the target message {target_m}"
@@ -97,7 +96,7 @@ def test_aes_gcm_forgery_attack_general(sample_num=4):
     cts, tags = zip(*Cs)
     target_m = get_random_bytes(64)
     target_a = get_random_bytes(16)
-    target_a, target_c, target_tag = aes_gcm_forgery_attack_general(ads, cts, tags, ms[0], target_m, target_a)
+    target_c, target_tag = aes_gcm_forgery_attack_general(ads, cts, tags, ms[0], target_m, target_a)
     assert gcm_dec(target_a, target_c, target_tag) == target_m, f"Decrypted message is not equal to the target message {target_m}"
     print("[+] Test `aes_gcm_forgery_attack_general` Passed")
     

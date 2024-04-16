@@ -32,7 +32,7 @@ def _ghash(h, a, c, const_coeff=gf2e(0)):
         h (gf2e element): the authentication key
         a (bytes): the associated data
         c (bytes): the ciphertext
-        const_coeff(int) : the constant coefficient of the GHASH polynomial
+        const_coeff(gf2e) : the constant coefficient of the GHASH polynomial
 
     Returns:
         gf2e element: the (hash) value of the evaluated polynomial.
@@ -111,11 +111,11 @@ def forge_tag_from_plaintext(h, a, c, t, m, target_a, target_msg):
     :param m: the known plaintex of c (bytes)
     :param target_a: the target associated data (bytes)
     :param target_msg: the target message (bytes)
-    :return: the forged authentication tag (bytes)
+    :return: (the forged ciphertext (bytes), the forged authentication tag (bytes))
     """
     assert len(m) >= len(target_msg), "The length of the known plaintext should be at least the length of the target message"
     target_c = xor(xor(c, m),target_msg)
-    return target_a, target_c, forge_tag_from_ciphertext(h, a, c, t, target_a, target_c)
+    return target_c, forge_tag_from_ciphertext(h, a, c, t, target_a, target_c)
 
 def aes_gcm_forgery_attack(a1:bytes, c1:bytes, t1:bytes,
                            a2:bytes, c2:bytes, t2:bytes,
@@ -139,7 +139,7 @@ def aes_gcm_forgery_attack(a1:bytes, c1:bytes, t1:bytes,
         target_a (bytes): the associated data of the target message
         
     Returns:
-        bytes: the forged ciphertext and the forged authentication tag
+        bytes, bytes: the forged ciphertext and the forged authentication tag
     """
     for h in recover_possible_auth_keys(a1, c1, t1, a2, c2, t2):
         yield forge_tag_from_plaintext(h, a1, c1, t1, known_plaintext1, target_a, target_msg)

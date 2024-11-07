@@ -52,8 +52,8 @@ The AES-GCM cipher is another widely used authenticated encryption algorithm. It
 `GHASH` uses a polynomial evaluation over the finite field $\mathbb{F}_{2^{128}}$. Except for the finite field, the `GHASH` algorithm is almost the same with the `Poly1305` algorithm. One can refer to the [GCM Wiki](https://en.wikipedia.org/wiki/Galois/Counter_Mode) for more details. Some notations are defined as follows:
 
 - Galois Field: $\mathbb{F}_{2^{128}}$ with modulus $P(x) = x^{128} + x^7 + x^2 + x + 1$.
-- MAC key: $H = {\textsf{AES}_{K}}(0) \in {\mathbb{F}_{2^{128}}}$.
-- Constant coefficient: $C = {\textsf{AES}_{K}}(\textsf{Nonce||1}) \in {\mathbb{F}_{2^{128}}}$.
+- MAC key: $`H = \textsf{AES}_{K}(0) \in \mathbb{F}_{2^{128}}`$.
+- Constant coefficient: $`C = \textsf{AES}_{K}(\textsf{Nonce||1}) \in \mathbb{F}_{2^{128}}`$.
 
 ```python
 # simplified version of the GHASH algorithm

@@ -6,7 +6,7 @@ Nonce reuse attacks for AEAD ciphers, especially for the the most commonly used 
 
 The ChaCha20-Poly1305 cipher is a widely used authenticated encryption algorithm. It is used in the popular TLS 1.3 protocol, mitigating the sidechannel attacks in the cipher suites based on the Advanced Encryption Standard (AES). 
 
-The ChaCha20-Poly1305 AEAD cipher is a combination of the ChaCha20 stream cipher and the Poly1305 MAC algorithm. The nonce reuse attack destroys the integrity of the encrypted messages and allows the attacker to forge arbitrary messages. We focus on the Poly1305 MAC algorithm which is almost the same with the `GHASH` algorithm used in the AES-GCM cipher.
+The ChaCha20-Poly1305 AEAD cipher is a combination of the ChaCha20 stream cipher and the `Poly1305` MAC algorithm. The nonce reuse attack destroys the integrity of the encrypted messages and allows the attacker to forge arbitrary messages (known-plaintext case). `Poly1305` MAC algorithm is almost the same as the `GHASH` algorithm used in the AES-GCM cipher.
 
 ### Poly1305
 
@@ -49,8 +49,29 @@ If the key $r, s$ is reused for two different messages $t_1 = \textsf{Poly1305}(
 
 The AES-GCM cipher is another widely used authenticated encryption algorithm. It uses the AES block cipher in the counter mode (CTR) and the Galois/Counter Mode (GCM) for authentication which is also called as `GHASH`.
 
-`GHASH` uses a polynomial evaluation over the finite field $\mathbb{F}_{2^{128}}$. Except for the finite field, the `GHASH` algorithm is almost the same with the `Poly1305` algorithm. I omit the details here and one can refer to the [GCM Wiki](https://en.wikipedia.org/wiki/Galois/Counter_Mode) for more details.
+`GHASH` uses a polynomial evaluation over the finite field $\mathbb{F}_{2^{128}}$. Except for the finite field, the `GHASH` algorithm is almost the same with the `Poly1305` algorithm. One can refer to the [GCM Wiki](https://en.wikipedia.org/wiki/Galois/Counter_Mode) for more details. Some notations are defined as follows:
 
+- Galois Field: $\mathbb{F}_{2^{128}}$ with modulus $P(x) = x^{128} + x^7 + x^2 + x + 1$.
+- MAC key: $H = \textsf{AES}_K(0) \in \mathbb{F}_{2^{128}}$.
+- Constant coefficient: $C = \textsf{AES}_K(\textsf{Nonce||1}) \in \mathbb{F}_{2^{128}}$
+
+```python
+# simplified version of the GHASH algorithm
+def ghash(hbytes: bytes, padded_data: bytes, const_coeff: bytes = b""):
+    h = to_gf2e(int.from_bytes(hbytes, byteorder="big"))
+    const_coeff = to_gf2e(int.from_bytes(const_coeff, byteorder="big"))
+    poly_coeff = [to_gf2e(int.from_bytes(padded_data[i:i+16], byteorder="big")) for i in range(0, len(padded_data), 16)] + [const_coeff]
+    # evaluate the polynomial at h
+    return sum([p * h ** i for i, p in enumerate(poly_coeff[::-1])])
+```
+
+The merged message `pad(AD) || pad(CT) || len(AD) || len(CT)` denoted as $p = (p_1, \cdots, p_n) \in \mathbb{F}_{2^{128}}^{n}$ consists of the ciphertext and the associated data. The `GHASH` function is a simple polynomial evaluation:
+
+$$
+tag = \sum_{i=1}^{n} p_i \cdot H^{i} + C 
+$$
+
+If the key $H, C$ is reused for two different messages $(p_1, \cdots, p_n)$ and $q_1, \cdots, q_m$, we can construct equations to recover the key $H, C$, and then forge arbitrary messages. All we need is to find the roots of a univariate polynomial $f(H) = \textsf{GHASH}(p_1, \cdots, p_n, H, C) - \textsf{GHASH}(q_1, \cdots, q_m, H, C) - (t_1 - t_2)$ in finite field $\mathbb{F}_{2^{128}}$ and recover candidate keys $H, C$.
 
 ## Implementation
 
@@ -65,7 +86,6 @@ Both implementations are based on the `SageMath` library. You can run the test s
 $ sage -python chacha_poly1305_forgery_test.py
 ```
 
-
 ## Reference
 
 - [GCM Wiki](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
@@ -74,5 +94,5 @@ $ sage -python chacha_poly1305_forgery_test.py
 
 CTF challenges related to the nonce reuse attacks:
 
-- PlaidCTF 2024 : DHCPP, [writeup](https://d-xuan.github.io/wednesday/ctf/plaid24/#dhcppp).
+- PlaidCTF 2024: DHCPP, [writeup](https://d-xuan.github.io/wednesday/ctf/plaid24/#dhcppp).
 - Forbiddden Fruit in [CryptoHack](https://aes.cryptohack.org/forbidden_fruit/).
